@@ -11,7 +11,13 @@ function App() {
   const [sonuclar, setSonuclar] = useState({});
   const [gecmis, setGecmis] = useState([]); // [{ harf: 'A', puan: 40 }, ...]
 
-  const [sure, setSure] = useState(90); // Oyun süresi (saniye)
+  // Yeni state'ler: oyun sonucu popup'ı ve en yüksek skor
+  const [showResult, setShowResult] = useState(false);
+  const [enYuksekSkor, setEnYuksekSkor] = useState(
+    localStorage.getItem('rekor') || 0
+  );
+
+  const [sure, setSure] = useState(60); // Oyun süresi (saniye)
   const [oyunBasladi, setOyunBasladi] = useState(false);
   const timerRef = useRef(null); // Sayacı kontrol etmek için
   const [loading, setLoading] = useState(false);
@@ -45,14 +51,12 @@ function App() {
       }
     }, 50);
     // Harf seçildiğinde sayaç başlasın
-    setSure(90); 
+    setSure(60); 
     setOyunBasladi(true);
   };
 
   const puanla = async () => {
-    // Yüklemeyi başlat
     setLoading(true);
-    // Sayaçı durdur ve oyun durumunu kapat
     clearInterval(timerRef.current);
     setOyunBasladi(false);
 
@@ -60,20 +64,23 @@ function App() {
       const response = await axios.post('http://localhost:5269/api/game/validate', {
         selectedLetter: harf,
         answers: cevaplar
-      }, { timeout: 15000 }); // 15 saniye timeout
+      });
 
       const { totalScore, validations } = response.data;
-      
-      // Backend'den gelen doğruları/yanlışları state'e kaydet
-      setSonuclar(validations); 
-      setGecmis(prev => [{ harf: harf, puan: totalScore }, ...prev].slice(0, 5)); // Son 5 skoru tutar
-      
-      alert(`Oyun bitti! Toplam Puanın: ${totalScore}`);
+      setSonuclar(validations);
+
+      // Rekor Kontrolü
+      if (totalScore > enYuksekSkor) {
+        setEnYuksekSkor(totalScore);
+        localStorage.setItem('rekor', totalScore);
+      }
+
+      setGecmis(prev => [{ harf, puan: totalScore }, ...prev].slice(0, 5));
+      setShowResult(true); // SONUÇ EKRANINI AÇ!
+
     } catch (error) {
-      console.error("Hata Detayı:", error.response ? error.response.data : error.message);
-      alert(`Backend uykuda mı? Hata oluştu: ${error.message}`);
+      console.error("Hata:", error);
     } finally {
-      // Her durumda yüklemeyi bitir
       setLoading(false);
     }
   };
@@ -112,7 +119,8 @@ function App() {
             </h1>
           </div>
 
-          <div className={`text-6xl font-mono font-black mb-4 transition-all duration-500 ${sure <= 15 ? 'text-red-600 animate-pulse scale-105' : 'text-yellow-400'}`}>
+          <div className={`text-6xl font-mono font-black mb-4 transition-all duration-300 
+    ${sure <= 15 ? 'text-red-600 animate-bounce' : 'text-yellow-400'}`}>
             {formatSure(sure)}
           </div>
 
@@ -194,6 +202,33 @@ function App() {
           )}
         </div>
       </div>
+
+      {/* SONUÇ POPUP'U */}
+      {showResult && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-slate-800 border-4 border-yellow-400 rounded-3xl p-8 max-w-sm w-full text-center shadow-[0_0_50px_rgba(250,204,21,0.3)] animate-in zoom-in duration-300">
+            <h2 className="text-3xl font-black text-white mb-2">OYUN BİTTİ!</h2>
+            <div className="text-6xl font-black text-yellow-400 mb-4">{gecmis[0]?.puan}</div>
+            <p className="text-slate-400 font-bold mb-6 uppercase tracking-widest">TOPLAM PUAN</p>
+
+            <div className="space-y-2 mb-8 text-left">
+              {kategoriler.map(kat => (
+                <div key={kat.id} className="flex justify-between items-center bg-slate-700/50 p-2 rounded-lg">
+                  <span className="text-sm font-bold text-slate-300">{kat.icon} {kat.label}</span>
+                  <span>{sonuclar[kat.id] ? '✅' : '❌'}</span>
+                </div>
+              ))}
+            </div>
+
+            <button 
+              onClick={() => setShowResult(false)}
+              className="w-full bg-yellow-400 hover:bg-yellow-500 text-slate-900 font-black py-4 rounded-xl text-xl transition-transform active:scale-95"
+            >
+              DEVAM ET
+            </button>
+          </div>
+        </div>
+      )}
 
     </div>
   )

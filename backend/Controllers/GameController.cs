@@ -40,22 +40,13 @@ public class GameController : ControllerBase
         string bitki = GetSafeValue("bitki");
         string esya = GetSafeValue("esya");
 
-    // 4. Prompt: AI'ya vereceğimiz talimat (daha katı kurallar)
-    string promptText = $@"
-    Sen ÇOK KATI bir Harf Avcısı oyunu hakemisin. 
-    Seçilen harf: '{request.SelectedLetter}'.
+        // 4. Prompt: AI'ya vereceğimiz talimat (sadece validations dönsün)
+        string promptText = $@"
+        Sen katı bir Harf Avcısı hakemisin. Seçilen harf: '{request.SelectedLetter}'.
+        Kelimeler: İsim:{isim}, Şehir:{sehir}, Hayvan:{hayvan}, Bitki:{bitki}, Eşya:{esya}.
 
-    Kelimeler: İsim:{isim}, Şehir:{sehir}, Hayvan:{hayvan}, Bitki:{bitki}, Eşya:{esya}.
-
-    Kurallar:
-    1. Kelime kesinlikle '{request.SelectedLetter}' ile başlamalı.
-    2. Kelime o kategoriye bariz bir şekilde ait olmalı. 
-    3. ÖNEMLİ: Malatya, Ankara gibi ŞEHİR isimlerini İSİM kategorisinde ASLA kabul etme. 
-    4. Anlamsız harf dizilerini (asd, fgh gibi) ASLA kabul etme.
-    5. Sadece gerçek ve mantıklı kelimelere TRUE ver.
-
-    SADECE şu JSON'u dön: 
-    {{ ""validations"": {{ ""isim"": false, ""sehir"": true, ... }}, ""totalScore"": 10 }}";
+        SADECE şu formatta JSON dön:
+        {{ ""validations"": {{ ""isim"": true, ""sehir"": false, ... }} }}";
 
         var requestBody = new
         {
@@ -69,11 +60,10 @@ public class GameController : ControllerBase
             var response = await client.PostAsJsonAsync(url, requestBody);
             var result = await response.Content.ReadAsStringAsync();
 
-            using var doc = JsonDocument.Parse(result);
+            // Google AI cevabını parse et
+            using var apiResponseDoc = JsonDocument.Parse(result);
 
-            // '?' ekleyerek "Eğer varsa al, yoksa hata verme" diyoruz.
-            // '!' ekleyerek de "Ben eminim, burası boş gelmeyecek" diye söz veriyoruz.
-            var candidates = doc.RootElement.GetProperty("candidates");
+            var candidates = apiResponseDoc.RootElement.GetProperty("candidates");
             string? aiText = candidates[0]
                 .GetProperty("content")
                 .GetProperty("parts")[0]
@@ -82,9 +72,40 @@ public class GameController : ControllerBase
             if (string.IsNullOrEmpty(aiText))
                 return BadRequest("AI boş yanıt döndü.");
 
+            // ```json ... ``` gibi işaretleri temizle
             string cleanJson = aiText.Replace("```json", "").Replace("```", "").Trim();
 
-            return Content(cleanJson, "application/json");
+            // AI'dan gelen JSON'u parse et (sadece validations var)
+            using var validationDoc = JsonDocument.Parse(cleanJson);
+            var validationsElement = validationDoc.RootElement.GetProperty("validations");
+
+            // PUANI BİZ HESAPLIYORUZ (daha güvenli kontrol)
+            int hesaplananPuan = 0;
+            // Kategorilerimizi sabit bir listede tutalım
+            var kontrolEdilecekKategoriler = new[] { "isim", "sehir", "hayvan", "bitki", "esya" };
+
+            foreach (var kat in kontrolEdilecekKategoriler)
+            {
+                // AI'dan gelen cevapta bu kategori var mı?
+                if (validationsElement.TryGetProperty(kat, out var val))
+                {
+                    // Değer true (boolean) ya da "true" (string) olabilir
+                    bool isTrue = (val.ValueKind == JsonValueKind.True) ||
+                                  (val.ValueKind == JsonValueKind.String && val.GetString()?.ToLower() == "true");
+
+                    if (isTrue)
+                    {
+                        hesaplananPuan += 10; // Her doğru 10 puan
+                    }
+                }
+            }
+
+            // Frontend'e hem doğrulamaları hem de kesin puanı gönder
+            return Ok(new
+            {
+                validations = validationsElement,
+                totalScore = hesaplananPuan
+            });
         }
         catch (Exception ex)
         {
