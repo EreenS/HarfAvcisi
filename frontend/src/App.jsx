@@ -7,12 +7,9 @@ function App() {
   const [cevaplar, setCevaplar] = useState({
     isim: '', sehir: '', hayvan: '', bitki: '', esya: ''
   });
+  // 1. Yeni State: Backend'den gelen doğrulama sonuçlarını tutar
+  const [sonuclar, setSonuclar] = useState({});
 
-  const handleInputChange = (katId, value) => {
-    setCevaplar(prev => ({ ...prev, [katId]: value }));
-  };
-  
-  // Kategorilerimiz ve ikonları
   const kategoriler = [
     { id: 'isim', label: 'İsim', icon: '👤' },
     { id: 'sehir', label: 'Şehir', icon: '📍' },
@@ -21,11 +18,17 @@ function App() {
     { id: 'esya', label: 'Eşya', icon: '📦' }
   ];
 
+  const handleInputChange = (katId, value) => {
+    setCevaplar(prev => ({ ...prev, [katId]: value }));
+  };
+
   const harfSec = () => {
+    // 2. Yeni Harf Seçilince her şeyi sıfırla
+    setSonuclar({}); 
+    setCevaplar({ isim: '', sehir: '', hayvan: '', bitki: '', esya: '' });
+    
     setIsSpinning(true);
     const alfabe = "ABCÇDEFGĞHIİJKLMNOÖPRSŞTUÜVYZ";
-    
-    // Görsel bir efekt: 1 saniye boyunca harfler hızlıca dönsün
     let count = 0;
     const interval = setInterval(() => {
       setHarf(alfabe[Math.floor(Math.random() * alfabe.length)]);
@@ -39,27 +42,25 @@ function App() {
 
   const puanla = async () => {
     try {
-      // Backend adresini henüz CORS ayarı yapmadığımız için varsayılan .NET portu (5000 veya 5001) olarak düşünelim
       const response = await axios.post('http://localhost:5269/api/game/validate', {
         selectedLetter: harf,
         answers: cevaplar
       });
 
       const { totalScore, validations } = response.data;
-      alert(`Oyun bitti! Toplam Puanın: ${totalScore}`);
       
-      // İleride burada hangi kelimenin yanlış olduğunu kırmızı yakarak gösteririz ;)
-      console.log("Detaylı sonuçlar:", validations);
-
+      // 3. Backend'den gelen doğruları/yanlışları state'e kaydet
+      setSonuclar(validations); 
+      
+      alert(`Oyun bitti! Toplam Puanın: ${totalScore}`);
     } catch (error) {
       console.error("Hata:", error);
-      alert("Backend uykuda mı ? Veriyi gönderemedim!");
+      alert("Backend uykuda mı? Veriyi gönderemedim!");
     }
   };
 
   return (
-    // min-h-screen yerine h-screen yaptık, overflow-hidden ile dışarı taşmayı engelledik
-    <div className="h-screen bg-gradient-to-b from-slate-900 to-black flex flex-col items-center justify-center p-4 font-sans text-slate-900 overflow-hidden">
+    <div className="h-screen bg-gradient-to-b from-slate-900 to-black flex flex-col items-center justify-center p-4 font-sans text-slate-100 overflow-hidden">
       
       <div className="text-center mb-4">
         <h1 className="text-4xl font-extrabold text-white tracking-tighter drop-shadow-lg">
@@ -69,7 +70,6 @@ function App() {
 
       <div className="bg-white rounded-3xl shadow-2xl p-6 w-full max-w-md border-4 border-yellow-400 flex flex-col gap-4">
         
-        {/* Harf Alanı */}
         <div className="flex flex-col items-center">
           <div className={`text-6xl font-black mb-2 transition-all duration-300 ${isSpinning ? 'animate-bounce scale-110' : 'scale-100 text-indigo-600'}`}>
             {harf}
@@ -89,19 +89,26 @@ function App() {
               <label className="text-xs font-bold text-indigo-800 ml-1 mb-0.5 block uppercase tracking-wider">
                 {kat.icon} {kat.label}
               </label>
+              
+              {/* 4. Dinamik Renk Sınıfları */}
               <input 
                 type="text" 
-                className="w-full bg-indigo-50 border-2 border-indigo-100 rounded-lg py-2 px-3 outline-none focus:border-yellow-400 focus:ring-2 focus:ring-yellow-200 transition-all font-semibold text-sm"
+                className={`w-full border-2 rounded-lg py-2 px-3 outline-none transition-all font-semibold text-sm ${
+                  sonuclar[kat.id] === true 
+                    ? 'border-green-500 bg-green-50 text-green-900 ring-2 ring-green-200' 
+                    : sonuclar[kat.id] === false 
+                    ? 'border-red-500 bg-red-50 text-red-900 ring-2 ring-red-200' 
+                    : 'border-indigo-100 bg-indigo-50 text-slate-900 focus:border-yellow-400'
+                }`}
                 placeholder={harf === "?" ? "Harf seç..." : `${harf} ile...`}
                 disabled={harf === "?"}
-                value={cevaplar[kat.id]}
+                value={cevaplar[kat.id] || ''}
                 onChange={(e) => handleInputChange(kat.id, e.target.value)}
               />
             </div>
           ))}
         </div>
 
-        {/* Bitti Butonu */}
         <button 
           className="w-full mt-2 bg-green-500 hover:bg-green-600 text-white font-black py-3 rounded-xl shadow-lg transform transition-all active:scale-95 text-lg uppercase tracking-widest"
           onClick={puanla}
@@ -110,7 +117,7 @@ function App() {
         </button>
       </div>
       
-      <footer className="mt-4 text-indigo-200 text-xs font-medium">
+      <footer className="mt-4 text-slate-500 text-xs font-medium italic">
         © 2026 Harf Avcısı - Berat Eren SEVİNDİ
       </footer>
     </div>
