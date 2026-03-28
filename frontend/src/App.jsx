@@ -9,6 +9,7 @@ function App() {
   });
   // 1. Yeni State: Backend'den gelen doğrulama sonuçlarını tutar
   const [sonuclar, setSonuclar] = useState({});
+  const [gecmis, setGecmis] = useState([]); // [{ harf: 'A', puan: 40 }, ...]
 
   const [sure, setSure] = useState(90); // Oyun süresi (saniye)
   const [oyunBasladi, setOyunBasladi] = useState(false);
@@ -62,6 +63,7 @@ function App() {
       
       // 3. Backend'den gelen doğruları/yanlışları state'e kaydet
       setSonuclar(validations); 
+      setGecmis(prev => [{ harf: harf, puan: totalScore }, ...prev].slice(0, 5)); // Son 5 skoru tutar
       
       alert(`Oyun bitti! Toplam Puanın: ${totalScore}`);
     } catch (error) {
@@ -94,71 +96,98 @@ function App() {
   };
 
   return (
-    <div className="h-screen bg-gradient-to-b from-slate-900 to-black flex flex-col items-center justify-center p-4 font-sans text-slate-100 overflow-hidden">
+    <div className="h-screen bg-gradient-to-b from-slate-900 to-black flex flex-row items-center justify-center p-6 font-sans text-slate-100 overflow-hidden gap-12">
       
-      <div className="text-center mb-4">
-        <h1 className="text-4xl font-extrabold text-white tracking-tighter drop-shadow-lg">
-          HARF <span className="text-yellow-400">AVCISI</span>
-        </h1>
-      </div>
-
-      {/* Sayaç Alanı */}
-      <div className={`text-5xl font-mono font-black mb-4 transition-all duration-500 ${sure <= 15 ? 'text-red-600 animate-pulse scale-110' : 'text-yellow-400'}`}>
-        {formatSure(sure)}
-      </div>
-
-      <div className="bg-white rounded-3xl shadow-2xl p-6 w-full max-w-md border-4 border-yellow-400 flex flex-col gap-4">
-        
-        <div className="flex flex-col items-center">
-          <div className={`text-6xl font-black mb-2 transition-all duration-300 ${isSpinning ? 'animate-bounce scale-110' : 'scale-100 text-indigo-600'}`}>
-            {harf}
+      {/* SOL TARAF: ANA OYUN ALANI - max-w-2xl -> max-w-xl (İdeal genişlik) */}
+      <div className="flex-1 flex flex-col items-center justify-center max-w-xl"> 
+        <div className="text-center mb-4">
+            <h1 className="text-4xl font-extrabold text-white tracking-tighter drop-shadow-lg">
+              HARF <span className="text-yellow-400">AVCISI</span>
+            </h1>
           </div>
-          <button 
-            onClick={harfSec}
-            disabled={isSpinning}
-            className="bg-yellow-400 hover:bg-yellow-500 text-indigo-900 font-bold py-2 px-6 rounded-full shadow-md transform active:scale-95 transition-all disabled:opacity-50 text-lg"
-          >
-            {harf === "?" ? "HARFİ YAKALA!" : "YENİ HARF SEÇ"}
-          </button>
-        </div>
 
-        <div className="space-y-2">
-          {kategoriler.map((kat) => (
-            <div key={kat.id} className="relative">
-              <label className="text-xs font-bold text-indigo-800 ml-1 mb-0.5 block uppercase tracking-wider">
-                {kat.icon} {kat.label}
-              </label>
-              
-              {/* 4. Dinamik Renk Sınıfları */}
-              <input 
-                type="text" 
-                className={`w-full border-2 rounded-lg py-2 px-3 outline-none transition-all font-semibold text-sm ${
-                  sonuclar[kat.id] === true 
-                    ? 'border-green-500 bg-green-50 text-green-900 ring-2 ring-green-200' 
-                    : sonuclar[kat.id] === false 
-                    ? 'border-red-500 bg-red-50 text-red-900 ring-2 ring-red-200' 
-                    : 'border-indigo-100 bg-indigo-50 text-slate-900 focus:border-yellow-400'
-                }`}
-                placeholder={harf === "?" ? "Harf seç..." : `${harf} ile...`}
-                disabled={harf === "?"}
-                value={cevaplar[kat.id] || ''}
-                onChange={(e) => handleInputChange(kat.id, e.target.value)}
-              />
+          <div className={`text-6xl font-mono font-black mb-4 transition-all duration-500 ${sure <= 15 ? 'text-red-600 animate-pulse scale-105' : 'text-yellow-400'}`}>
+            {formatSure(sure)}
+          </div>
+
+          <div className="bg-white rounded-3xl shadow-2xl p-8 w-full border-4 border-yellow-400 flex flex-col gap-4">
+            
+            {/* Harf Alanı - text-8xl -> text-7xl */}
+            <div className="flex flex-col items-center">
+              <div className={`text-7xl font-black mb-2 transition-all duration-300 ${isSpinning ? 'animate-bounce scale-110' : 'scale-100 text-indigo-600'}`}>
+                {harf}
+              </div>
+              <button 
+                  onClick={harfSec}
+                  disabled={isSpinning}
+                  className="bg-yellow-400 hover:bg-yellow-500 text-indigo-900 font-bold py-2 px-6 rounded-full shadow-md transform active:scale-95 transition-all disabled:opacity-50 text-base"
+                >
+                  {harf === "?" ? "HARFİ YAKALA!" : "YENİ HARF SEÇ"}
+                </button>
             </div>
-          ))}
-        </div>
 
-        <button 
-          className="w-full mt-2 bg-green-500 hover:bg-green-600 text-white font-black py-3 rounded-xl shadow-lg transform transition-all active:scale-95 text-lg uppercase tracking-widest"
-          onClick={puanla}
-        >
-          PUANLA
-        </button>
+            <div className="space-y-2">
+              {kategoriler.map((kat) => (
+                <div key={kat.id}>
+                  <label className="text-xs font-bold text-indigo-800 ml-1 mb-0.5 block uppercase tracking-wider">
+                    {kat.icon} {kat.label}
+                  </label>
+                  <input 
+                    type="text" 
+                    className={`w-full border-2 rounded-lg py-2.5 px-4 outline-none transition-all font-semibold text-sm ${
+                      sonuclar[kat.id] === true 
+                        ? 'border-green-500 bg-green-50 text-green-900 ring-2 ring-green-200' 
+                        : sonuclar[kat.id] === false 
+                        ? 'border-red-500 bg-red-50 text-red-900 ring-2 ring-red-200' 
+                        : 'border-indigo-100 bg-indigo-50 text-slate-900 focus:border-yellow-400'
+                    }`}
+                    placeholder={harf === "?" ? "Harf seç..." : `${harf} ile...`}
+                    disabled={harf === "?"}
+                    value={cevaplar[kat.id] || ''}
+                    onChange={(e) => handleInputChange(kat.id, e.target.value)}
+                  />
+                </div>
+              ))}
+            </div>
+
+            <button 
+                className="w-full mt-2 bg-green-500 hover:bg-green-600 text-white font-black py-3.5 rounded-xl shadow-lg transform transition-all active:scale-95 text-lg uppercase tracking-widest"
+                onClick={puanla}
+              >
+                PUANLA
+              </button>
+          </div>
       </div>
-      
-      <footer className="mt-4 text-slate-500 text-xs font-medium italic">
-        © 2026 Harf Avcısı - Berat Eren SEVİNDİ
-      </footer>
+
+      {/* SAĞ TARAF: GEÇMİŞ SKORLAR PANELİ - w-96 -> w-80 */}
+      <div className="w-80 flex flex-col gap-4">
+        <h2 className="text-2xl font-bold text-yellow-400 border-b-2 border-yellow-400/30 pb-2 flex items-center gap-2">
+          <span>📜</span> SON AVLAR
+        </h2>
+        
+        <div className="flex flex-col gap-3">
+          {gecmis.length === 0 ? (
+            <p className="text-slate-500 italic text-base text-center mt-6">Henüz avlanma yapılmadı...</p>
+          ) : (
+            gecmis.map((item, index) => (
+              <div 
+                key={index} 
+                className="bg-slate-800/60 border-2 border-slate-700 p-4 rounded-2xl flex justify-between items-center transform transition-all hover:scale-105"
+              >
+                <div className="flex flex-col">
+                  <span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Harf</span>
+                  <span className="text-3xl font-black text-indigo-400 leading-none">{item.harf}</span>
+                </div>
+                <div className="text-right">
+                  <span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Puan</span>
+                  <div className="text-3xl font-black text-green-400 leading-none">{item.puan}</div>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+
     </div>
   )
 }
