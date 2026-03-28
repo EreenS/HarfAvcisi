@@ -35,18 +35,22 @@ public class GameController : ControllerBase
         string bitki = GetSafeValue("bitki");
         string esya = GetSafeValue("esya");
 
-        // 4. Prompt: AI'ya vereceğimiz talimat
-        string promptText = $@"
-        Sen bir Harf Avcısı oyunu hakemisin. Seçilen harf: '{request.SelectedLetter}'. 
-        Şu kelimelerin harfle başlayıp başlamadığını ve kategorisine uygunluğunu denetle:
-        İsim: {isim}, Şehir: {sehir}, Hayvan: {hayvan}, Bitki: {bitki}, Eşya: {esya}.
+    // 4. Prompt: AI'ya vereceğimiz talimat (daha katı kurallar)
+    string promptText = $@"
+    Sen ÇOK KATI bir Harf Avcısı oyunu hakemisin. 
+    Seçilen harf: '{request.SelectedLetter}'.
 
-        Kurallar:
-        1. Kelime '{request.SelectedLetter}' ile başlamalı.
-        2. Kategoriye tam uymalı. Eğer alan boşsa (hiçbir şey yazılmamışsa) o kategoriye FALSE ver.
-        
-        SADECE şu JSON'u dön: 
-        {{ ""validations"": {{ ""isim"": true, ""sehir"": true, ""hayvan"": true, ""bitki"": true, ""esya"": true }}, ""totalScore"": 50 }}";
+    Kelimeler: İsim:{isim}, Şehir:{sehir}, Hayvan:{hayvan}, Bitki:{bitki}, Eşya:{esya}.
+
+    Kurallar:
+    1. Kelime kesinlikle '{request.SelectedLetter}' ile başlamalı.
+    2. Kelime o kategoriye bariz bir şekilde ait olmalı. 
+    3. ÖNEMLİ: Malatya, Ankara gibi ŞEHİR isimlerini İSİM kategorisinde ASLA kabul etme. 
+    4. Anlamsız harf dizilerini (asd, fgh gibi) ASLA kabul etme.
+    5. Sadece gerçek ve mantıklı kelimelere TRUE ver.
+
+    SADECE şu JSON'u dön: 
+    {{ ""validations"": {{ ""isim"": false, ""sehir"": true, ... }}, ""totalScore"": 10 }}";
 
         var requestBody = new
         {
