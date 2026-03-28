@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import axios from 'axios'
 
 function App() {
@@ -9,6 +9,10 @@ function App() {
   });
   // 1. Yeni State: Backend'den gelen doğrulama sonuçlarını tutar
   const [sonuclar, setSonuclar] = useState({});
+
+  const [sure, setSure] = useState(90); // Oyun süresi (saniye)
+  const [oyunBasladi, setOyunBasladi] = useState(false);
+  const timerRef = useRef(null); // Sayacı kontrol etmek için
 
   const kategoriler = [
     { id: 'isim', label: 'İsim', icon: '👤' },
@@ -38,9 +42,16 @@ function App() {
         setIsSpinning(false);
       }
     }, 50);
+    // Harf seçildiğinde sayaç başlasın
+    setSure(90); 
+    setOyunBasladi(true);
   };
 
   const puanla = async () => {
+    // Sayaçı durdur ve oyun durumunu kapat
+    clearInterval(timerRef.current);
+    setOyunBasladi(false);
+
     try {
       const response = await axios.post('http://localhost:5269/api/game/validate', {
         selectedLetter: harf,
@@ -59,6 +70,29 @@ function App() {
     }
   };
 
+  // Sayaç mantığı: oyun başladığında saniyeyi azalt, 0 olduğunda otomatik puanla
+  useEffect(() => {
+    if (oyunBasladi && sure > 0) {
+      timerRef.current = setInterval(() => {
+        setSure((prev) => prev - 1);
+      }, 1000);
+    } else if (sure === 0) {
+      clearInterval(timerRef.current);
+      // sure bittiyse puanla
+      puanla();
+      setOyunBasladi(false);
+    }
+
+    return () => clearInterval(timerRef.current);
+  }, [oyunBasladi, sure]);
+
+  // Süreyi biçimlendiren yardımcı fonksiyon
+  const formatSure = (saniye) => {
+    const dk = Math.floor(saniye / 60);
+    const sn = saniye % 60;
+    return `${dk}:${sn < 10 ? '0' + sn : sn}`;
+  };
+
   return (
     <div className="h-screen bg-gradient-to-b from-slate-900 to-black flex flex-col items-center justify-center p-4 font-sans text-slate-100 overflow-hidden">
       
@@ -66,6 +100,11 @@ function App() {
         <h1 className="text-4xl font-extrabold text-white tracking-tighter drop-shadow-lg">
           HARF <span className="text-yellow-400">AVCISI</span>
         </h1>
+      </div>
+
+      {/* Sayaç Alanı */}
+      <div className={`text-5xl font-mono font-black mb-4 transition-all duration-500 ${sure <= 15 ? 'text-red-600 animate-pulse scale-110' : 'text-yellow-400'}`}>
+        {formatSure(sure)}
       </div>
 
       <div className="bg-white rounded-3xl shadow-2xl p-6 w-full max-w-md border-4 border-yellow-400 flex flex-col gap-4">
@@ -113,7 +152,7 @@ function App() {
           className="w-full mt-2 bg-green-500 hover:bg-green-600 text-white font-black py-3 rounded-xl shadow-lg transform transition-all active:scale-95 text-lg uppercase tracking-widest"
           onClick={puanla}
         >
-          BİTTİ! (PUANLA)
+          PUANLA
         </button>
       </div>
       
