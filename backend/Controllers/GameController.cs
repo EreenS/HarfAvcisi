@@ -10,7 +10,7 @@ namespace backend.Controllers;
 public class GameController : ControllerBase
 {
     // 1. API ANAHTARINI BURAYA YAPIŞTIR
-    private readonly string _apiKey = "AIzaSyDBZ4s3eLMO8UV7Pu0YvVvtA-R0rfZr7RA";
+    private readonly string _apiKey = "asdasdasdadasd";
 
     [HttpPost("validate")]
     public async Task<IActionResult> ValidateAnswers([FromBody] GameRequest request)
