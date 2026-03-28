@@ -30,6 +30,8 @@ public class GameController : ControllerBase
 
         // 2. Gemini API endpoint hazırlığı (Artık "Google AI" üzerinden konuşuyoruz)
         string url = $"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key={_apiKey}";
+        // Daha güçlü model Token Gelince geçiş yapacağız...
+        //string url = $"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={_apiKey}";
 
         using var client = new HttpClient();
 
