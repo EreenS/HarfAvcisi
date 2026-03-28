@@ -14,6 +14,7 @@ function App() {
   const [sure, setSure] = useState(90); // Oyun süresi (saniye)
   const [oyunBasladi, setOyunBasladi] = useState(false);
   const timerRef = useRef(null); // Sayacı kontrol etmek için
+  const [loading, setLoading] = useState(false);
 
   const kategoriler = [
     { id: 'isim', label: 'İsim', icon: '👤' },
@@ -49,6 +50,8 @@ function App() {
   };
 
   const puanla = async () => {
+    // Yüklemeyi başlat
+    setLoading(true);
     // Sayaçı durdur ve oyun durumunu kapat
     clearInterval(timerRef.current);
     setOyunBasladi(false);
@@ -57,11 +60,11 @@ function App() {
       const response = await axios.post('http://localhost:5269/api/game/validate', {
         selectedLetter: harf,
         answers: cevaplar
-      });
+      }, { timeout: 30000 }); // 30 saniye timeout
 
       const { totalScore, validations } = response.data;
       
-      // 3. Backend'den gelen doğruları/yanlışları state'e kaydet
+      // Backend'den gelen doğruları/yanlışları state'e kaydet
       setSonuclar(validations); 
       setGecmis(prev => [{ harf: harf, puan: totalScore }, ...prev].slice(0, 5)); // Son 5 skoru tutar
       
@@ -69,6 +72,9 @@ function App() {
     } catch (error) {
       console.error("Hata:", error);
       alert("Backend uykuda mı? Veriyi gönderemedim!");
+    } finally {
+      // Her durumda yüklemeyi bitir
+      setLoading(false);
     }
   };
 
@@ -151,10 +157,11 @@ function App() {
             </div>
 
             <button 
-                className="w-full mt-2 bg-green-500 hover:bg-green-600 text-white font-black py-3.5 rounded-xl shadow-lg transform transition-all active:scale-95 text-lg uppercase tracking-widest"
+                className={`w-full mt-2 font-black py-3.5 rounded-xl shadow-lg transform transition-all active:scale-95 text-lg uppercase tracking-widest ${loading ? 'bg-gray-500 cursor-not-allowed' : 'bg-green-500 hover:bg-green-600 text-white'}`}
                 onClick={puanla}
+                disabled={loading || harf === "?"}
               >
-                PUANLA
+                {loading ? "Ai İNCELİYOR..." : "PUANLA"}
               </button>
           </div>
       </div>
