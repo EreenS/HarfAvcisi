@@ -58,43 +58,41 @@ function App() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-indigo-600 to-purple-700 flex flex-col items-center p-6 font-sans text-slate-900">
-      {/* Başlık Alanı */}
-      <div className="text-center mb-10">
-        <h1 className="text-5xl font-extrabold text-white tracking-tighter drop-shadow-lg">
+    // min-h-screen yerine h-screen yaptık, overflow-hidden ile dışarı taşmayı engelledik
+    <div className="h-screen bg-gradient-to-b from-slate-900 to-black flex flex-col items-center justify-center p-4 font-sans text-slate-900 overflow-hidden">
+      
+      <div className="text-center mb-4">
+        <h1 className="text-4xl font-extrabold text-white tracking-tighter drop-shadow-lg">
           HARF <span className="text-yellow-400">AVCISI</span>
         </h1>
-        <p className="text-indigo-200 mt-2 font-medium italic text-lg">Hızlı olan kazansın!</p>
       </div>
 
-      {/* Ana Oyun Kartı */}
-      <div className="bg-white rounded-3xl shadow-2xl p-8 w-full max-w-lg border-4 border-yellow-400">
+      <div className="bg-white rounded-3xl shadow-2xl p-6 w-full max-w-md border-4 border-yellow-400 flex flex-col gap-4">
         
         {/* Harf Alanı */}
-        <div className="flex flex-col items-center mb-8">
-          <div className={`text-8xl font-black mb-4 transition-all duration-300 ${isSpinning ? 'animate-bounce scale-110' : 'scale-100 text-indigo-600'}`}>
+        <div className="flex flex-col items-center">
+          <div className={`text-6xl font-black mb-2 transition-all duration-300 ${isSpinning ? 'animate-bounce scale-110' : 'scale-100 text-indigo-600'}`}>
             {harf}
           </div>
           <button 
             onClick={harfSec}
             disabled={isSpinning}
-            className="bg-yellow-400 hover:bg-yellow-500 text-indigo-900 font-bold py-3 px-8 rounded-full shadow-lg transform active:scale-95 transition-all disabled:opacity-50 text-xl"
+            className="bg-yellow-400 hover:bg-yellow-500 text-indigo-900 font-bold py-2 px-6 rounded-full shadow-md transform active:scale-95 transition-all disabled:opacity-50 text-lg"
           >
             {harf === "?" ? "HARFİ YAKALA!" : "YENİ HARF SEÇ"}
           </button>
         </div>
 
-        {/* Form Alanları */}
-        <div className="space-y-4">
+        <div className="space-y-2">
           {kategoriler.map((kat) => (
             <div key={kat.id} className="relative">
-              <label className="text-sm font-bold text-indigo-800 ml-1 mb-1 block uppercase tracking-wider">
+              <label className="text-xs font-bold text-indigo-800 ml-1 mb-0.5 block uppercase tracking-wider">
                 {kat.icon} {kat.label}
               </label>
               <input 
                 type="text" 
-                className="w-full bg-indigo-50 border-2 border-indigo-100 rounded-xl py-3 px-4 outline-none focus:border-yellow-400 focus:ring-2 focus:ring-yellow-200 transition-all font-semibold"
-                placeholder={harf === "?" ? "Önce harf seçin..." : `${harf} ile başlayan...`}
+                className="w-full bg-indigo-50 border-2 border-indigo-100 rounded-lg py-2 px-3 outline-none focus:border-yellow-400 focus:ring-2 focus:ring-yellow-200 transition-all font-semibold text-sm"
+                placeholder={harf === "?" ? "Harf seç..." : `${harf} ile...`}
                 disabled={harf === "?"}
                 value={cevaplar[kat.id]}
                 onChange={(e) => handleInputChange(kat.id, e.target.value)}
@@ -105,15 +103,15 @@ function App() {
 
         {/* Bitti Butonu */}
         <button 
-          className="w-full mt-8 bg-green-500 hover:bg-green-600 text-white font-black py-4 rounded-xl shadow-xl transform transition-all active:scale-95 text-xl uppercase tracking-widest"
+          className="w-full mt-2 bg-green-500 hover:bg-green-600 text-white font-black py-3 rounded-xl shadow-lg transform transition-all active:scale-95 text-lg uppercase tracking-widest"
           onClick={puanla}
         >
           BİTTİ! (PUANLA)
         </button>
       </div>
       
-      <footer className="mt-8 text-indigo-200 text-sm font-medium">
-        © 2026 Harf Avcısı - Tüm Hakları Saklıdır. Tasarım ve Geliştirme: Berat Eren SEVİNDİ
+      <footer className="mt-4 text-indigo-200 text-xs font-medium">
+        © 2026 Harf Avcısı - Berat Eren SEVİNDİ
       </footer>
     </div>
   )
