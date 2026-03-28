@@ -22,6 +22,10 @@ function App() {
   const timerRef = useRef(null); // Sayacı kontrol etmek için
   const [loading, setLoading] = useState(false);
 
+  // AI analiz overlay durumu
+  const [analizAsamasi, setAnalizAsamasi] = useState(null); // null | 'analiz' | 'bitti'
+  const [analizSonuclar, setAnalizSonuclar] = useState({});
+
   const kategoriler = [
     { id: 'isim', label: 'İsim', icon: '👤' },
     { id: 'sehir', label: 'Şehir', icon: '📍' },
@@ -57,6 +61,7 @@ function App() {
 
   const puanla = async () => {
     setLoading(true);
+    setAnalizAsamasi('analiz'); // OVERLAY'İ AÇ
     clearInterval(timerRef.current);
     setOyunBasladi(false);
 
@@ -67,6 +72,9 @@ function App() {
       });
 
       const { totalScore, validations } = response.data;
+      
+      // AI sonuçlarını overlay'e ve mevcut sonuç state'ine aktar
+      setAnalizSonuclar({ validations, totalScore });
       setSonuclar(validations);
 
       // Rekor Kontrolü
@@ -74,12 +82,14 @@ function App() {
         setEnYuksekSkor(totalScore);
         localStorage.setItem('rekor', totalScore);
       }
-
       setGecmis(prev => [{ harf, puan: totalScore }, ...prev].slice(0, 5));
-      setShowResult(true); // SONUÇ EKRANINI AÇ!
+
+      setAnalizAsamasi('bitti'); // SONUÇLARI GÖSTER
+      setShowResult(true); // Alttaki sonuç popup'unu da göster
 
     } catch (error) {
       console.error("Hata:", error);
+      setAnalizAsamasi(null);
     } finally {
       setLoading(false);
     }
@@ -174,7 +184,7 @@ function App() {
           </div>
       </div>
 
-      {/* SAĞ TARAF: GEÇMİŞ SKORLAR PANELİ - w-96 -> w-80 */}
+  {/* SAĞ TARAF: GEÇMİŞ SKORLAR PANELİ - w-96 -> w-80 */}
       <div className="w-80 flex flex-col gap-4">
         <h2 className="text-2xl font-bold text-yellow-400 border-b-2 border-yellow-400/30 pb-2 flex items-center gap-2">
           <span>📜</span> SON AVLAR
@@ -202,6 +212,71 @@ function App() {
           )}
         </div>
       </div>
+
+      {/* AI ANALİZ OVERLAY */}
+      {analizAsamasi && (
+        <div className="fixed inset-0 bg-black/95 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-[#0d1117] border border-[#30363d] rounded-2xl p-8 w-full max-w-sm relative overflow-hidden">
+            {/* Scanner çizgisi */}
+            {analizAsamasi === 'analiz' && (
+              <div className="absolute left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-green-400 to-transparent animate-[scan_1.5s_ease-in-out_infinite]" />
+            )}
+
+            <p className="text-green-400 text-[10px] tracking-[3px] uppercase mb-1">◆ Harf Avcısı Yapay Zeka</p>
+            <p className="text-white text-xl font-bold mb-4 font-mono">
+              {analizAsamasi === 'analiz' ? 'ANALİZ EDİLİYOR' : 'ANALİZ TAMAMLANDI'}
+              {analizAsamasi === 'analiz' && <span className="animate-pulse">_</span>}
+            </p>
+
+            {/* Progress bar */}
+            <div className="h-0.5 bg-[#21262d] rounded mb-5 overflow-hidden">
+              <div className={`h-full bg-green-400 transition-all duration-1000 ${analizAsamasi === 'bitti' ? 'w-full' : 'w-1/3'}`} />
+            </div>
+
+            {/* Kategoriler */}
+            <div className="space-y-2 font-mono">
+              {kategoriler.map((kat) => {
+                const sonuc = analizAsamasi === 'bitti' ? analizSonuclar.validations?.[kat.id] : null;
+                return (
+                  <div key={kat.id} className="flex items-center gap-3 py-2 border-b border-[#21262d]">
+                    <span className="text-lg w-7 text-center">{kat.icon}</span>
+                    <span className="text-[#8b949e] text-xs uppercase tracking-wider flex-1">{kat.label}</span>
+                    <span className="text-[#58a6ff] text-xs truncate max-w-[90px]">{cevaplar[kat.id] || '-'}</span>
+                    <span
+                      className={`text-[10px] font-bold px-2 py-0.5 rounded ${
+                        sonuc === null
+                          ? 'text-yellow-400 bg-yellow-400/10'
+                          : sonuc
+                          ? 'text-green-400 bg-green-400/10'
+                          : 'text-red-400 bg-red-400/10'
+                      }`}
+                    >
+                      {sonuc === null ? 'TARANYOR' : sonuc ? '✓ ONAYLANDI' : '✗ REDDEDİLDİ'}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Puan */}
+            {analizAsamasi === 'bitti' && (
+              <div className="mt-6 text-center">
+                <p className="text-[#8b949e] text-[10px] tracking-[2px] uppercase">Toplam Puan</p>
+                <p className="text-yellow-400 text-5xl font-black font-mono">{analizSonuclar.totalScore}</p>
+                <button
+                  onClick={() => {
+                    setAnalizAsamasi(null);
+                    setShowResult(false);
+                  }}
+                  className="mt-4 w-full bg-green-700 hover:bg-green-600 text-white font-bold py-3 rounded-lg tracking-widest transition-colors"
+                >
+                  DEVAM ET
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* SONUÇ POPUP'U */}
       {showResult && (
