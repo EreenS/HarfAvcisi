@@ -60,7 +60,7 @@ function App() {
       const response = await axios.post('http://localhost:5269/api/game/validate', {
         selectedLetter: harf,
         answers: cevaplar
-      }, { timeout: 30000 }); // 30 saniye timeout
+      }, { timeout: 15000 }); // 15 saniye timeout
 
       const { totalScore, validations } = response.data;
       
@@ -70,8 +70,8 @@ function App() {
       
       alert(`Oyun bitti! Toplam Puanın: ${totalScore}`);
     } catch (error) {
-      console.error("Hata:", error);
-      alert("Backend uykuda mı? Veriyi gönderemedim!");
+      console.error("Hata Detayı:", error.response ? error.response.data : error.message);
+      alert(`Backend uykuda mı? Hata oluştu: ${error.message}`);
     } finally {
       // Her durumda yüklemeyi bitir
       setLoading(false);
