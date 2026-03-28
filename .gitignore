@@ -5,7 +5,8 @@
 # .NET Build outputs
 **/bin/
 **/obj/
-
+appsettings.json
+appsettings.Development.json
 # IDE & OS
 .vscode/
 .DS_Store

@@ -9,8 +9,13 @@ namespace backend.Controllers;
 [Route("api/[controller]")]
 public class GameController : ControllerBase
 {
-    // 1. API ANAHTARINI BURAYA YAPIŞTIR
-    private readonly string _apiKey = "asdasdasdadasd";
+    private readonly string _apiKey;
+
+    // IConfiguration sayesinde ayarlara erişiyoruz
+    public GameController(IConfiguration configuration)
+    {
+        _apiKey = configuration["Gemini:ApiKey"] ?? "";
+    }
 
     [HttpPost("validate")]
     public async Task<IActionResult> ValidateAnswers([FromBody] GameRequest request)
