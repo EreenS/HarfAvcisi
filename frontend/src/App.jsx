@@ -1,8 +1,16 @@
 import { useState } from 'react'
+import axios from 'axios'
 
 function App() {
   const [harf, setHarf] = useState("?");
   const [isSpinning, setIsSpinning] = useState(false);
+  const [cevaplar, setCevaplar] = useState({
+    isim: '', sehir: '', hayvan: '', bitki: '', esya: ''
+  });
+
+  const handleInputChange = (katId, value) => {
+    setCevaplar(prev => ({ ...prev, [katId]: value }));
+  };
   
   // Kategorilerimiz ve ikonları
   const kategoriler = [
@@ -27,6 +35,26 @@ function App() {
         setIsSpinning(false);
       }
     }, 50);
+  };
+
+  const puanla = async () => {
+    try {
+      // Backend adresini henüz CORS ayarı yapmadığımız için varsayılan .NET portu (5000 veya 5001) olarak düşünelim
+      const response = await axios.post('http://localhost:5269/api/game/validate', {
+        selectedLetter: harf,
+        answers: cevaplar
+      });
+
+      const { totalScore, validations } = response.data;
+      alert(`Oyun bitti! Toplam Puanın: ${totalScore}`);
+      
+      // İleride burada hangi kelimenin yanlış olduğunu kırmızı yakarak gösteririz ;)
+      console.log("Detaylı sonuçlar:", validations);
+
+    } catch (error) {
+      console.error("Hata:", error);
+      alert("Backend uykuda mı ? Veriyi gönderemedim!");
+    }
   };
 
   return (
@@ -68,6 +96,8 @@ function App() {
                 className="w-full bg-indigo-50 border-2 border-indigo-100 rounded-xl py-3 px-4 outline-none focus:border-yellow-400 focus:ring-2 focus:ring-yellow-200 transition-all font-semibold"
                 placeholder={harf === "?" ? "Önce harf seçin..." : `${harf} ile başlayan...`}
                 disabled={harf === "?"}
+                value={cevaplar[kat.id]}
+                onChange={(e) => handleInputChange(kat.id, e.target.value)}
               />
             </div>
           ))}
@@ -76,7 +106,7 @@ function App() {
         {/* Bitti Butonu */}
         <button 
           className="w-full mt-8 bg-green-500 hover:bg-green-600 text-white font-black py-4 rounded-xl shadow-xl transform transition-all active:scale-95 text-xl uppercase tracking-widest"
-          onClick={() => alert("Backend henüz bağlanmadı, biraz sabır!")}
+          onClick={puanla}
         >
           BİTTİ! (PUANLA)
         </button>
